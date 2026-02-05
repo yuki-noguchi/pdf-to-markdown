@@ -32,6 +32,36 @@ CREATE TABLE IF NOT EXISTS jobs (
 `);
 
 type Job = { id: string; total_pages: number };
+type JobPatch = Partial<{
+  status: "UPLOADING" | "QUEUED" | "RUNNING" | "DONE" | "FAILED";
+  totalPages: number;
+  currentPage: number;
+  progress: number;
+  resultPath: string;
+  errorMessage: string;
+}>;
+
+function updateJobInDb(jobId: string, patch: JobPatch) {
+  const mapping: Record<string, string> = {
+    status: "status",
+    totalPages: "total_pages",
+    currentPage: "current_page",
+    progress: "progress",
+    resultPath: "result_path",
+    errorMessage: "error_message"
+  };
+
+  const keys = Object.keys(patch) as (keyof JobPatch)[];
+  if (!keys.length) return;
+  const sets = keys.map((k) => `${mapping[k]} = ?`);
+  const values = keys.map((k) => patch[k]);
+  sets.push("updated_at = ?");
+  values.push(new Date().toISOString());
+  values.push(jobId);
+
+  db.prepare(`UPDATE jobs SET ${sets.join(", ")} WHERE id = ?`).run(...values);
+}
+
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -108,6 +138,7 @@ async function processJob(job: Job) {
   const pageFiles = listPageImages(job.id);
   if (pageFiles.length === 0) return;
 
+  updateJobInDb(job.id, { status: "RUNNING", totalPages: pageFiles.length });
   await post(`/internal/jobs/${job.id}/status`, { status: "RUNNING", totalPages: pageFiles.length });
 
   const resultDir = path.join(resultsRoot, job.id);
@@ -128,6 +159,7 @@ async function processJob(job: Job) {
     chunks.push("---", "", md, "");
 
     const progress = pageNo / pageFiles.length;
+    updateJobInDb(job.id, { currentPage: pageNo, progress });
     await post(`/internal/jobs/${job.id}/status`, { currentPage: pageNo, progress });
     await post(`/internal/jobs/${job.id}/events`, {
       type: "progress",
@@ -135,11 +167,14 @@ async function processJob(job: Job) {
       progress,
       message: `Analyzing page ${pageNo}/${pageFiles.length}`
     });
+
+    if (fs.existsSync(workImage)) fs.unlinkSync(workImage);
   }
 
   const resultPath = path.join(resultDir, "result.md");
   fs.writeFileSync(resultPath, chunks.join("\n"));
 
+  updateJobInDb(job.id, { status: "DONE", resultPath: "result.md", progress: 1 });
   await post(`/internal/jobs/${job.id}/status`, { status: "DONE", resultPath: "result.md", progress: 1 });
   await post(`/internal/jobs/${job.id}/events`, {
     type: "done",
@@ -170,6 +205,7 @@ async function tick() {
     await processJob(job);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    updateJobInDb(job.id, { status: "FAILED", errorMessage: message });
     await post(`/internal/jobs/${job.id}/status`, { status: "FAILED", errorMessage: message });
     await post(`/internal/jobs/${job.id}/events`, { type: "failed", message });
   }
