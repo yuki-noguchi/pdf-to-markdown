@@ -45,12 +45,23 @@ function listPageImages(jobId: string) {
     .sort();
 }
 
-async function post(pathname: string, body: unknown) {
-  await fetch(`${apiBase}${pathname}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
+async function post(pathname: string, body: unknown, throwOnError = false) {
+  try {
+    const res = await fetch(`${apiBase}${pathname}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const message = `worker->api post failed: ${pathname} status=${res.status}`;
+      if (throwOnError) throw new Error(message);
+      console.warn(message);
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (throwOnError) throw error;
+    console.warn(`worker->api post error: ${pathname} ${message}`);
+  }
 }
 
 function codexPrompt(pageNo: number) {
