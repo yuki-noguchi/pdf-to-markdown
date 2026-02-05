@@ -1,0 +1,20 @@
+{
+  "name": "pdf-to-markdown",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run -ws build",
+    "dev": "concurrently \"npm:dev:web\" \"npm:dev:api\" \"npm:dev:worker\"",
+    "dev:web": "npm --workspace @pdf2md/web run dev",
+    "dev:api": "npm --workspace @pdf2md/api run dev",
+    "dev:worker": "npm --workspace @pdf2md/worker run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "typescript": "^5.6.3"
+  }
+}
