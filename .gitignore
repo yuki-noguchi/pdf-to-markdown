@@ -5,3 +5,4 @@ data/db.sqlite
 *.png
 *.pdf
 *.md
+!README.md
