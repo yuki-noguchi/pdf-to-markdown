@@ -13,6 +13,10 @@ const port = Number(process.env.PORT ?? 3001);
 app.use(cors());
 app.use(express.json());
 
+app.get("/healthz", (_req, res) => {
+  res.json({ ok: true });
+});
+
 const upload = multer({ storage: multer.memoryStorage() });
 const pageUpload = multer({ storage: multer.memoryStorage() });
 

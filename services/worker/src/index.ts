@@ -64,6 +64,20 @@ async function post(pathname: string, body: unknown, throwOnError = false) {
   }
 }
 
+
+async function isApiReady() {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1000);
+  try {
+    const res = await fetch(`${apiBase}/healthz`, { signal: controller.signal });
+    return res.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function codexPrompt(pageNo: number) {
   return `You are given an image file "page.png" representing a single page of a PDF.\n\nTask:\nConvert the content into clean Markdown.\n\nRules:\n- Output ONLY Markdown.\n- Preserve headings and structure.\n- Use tables for tabular data.\n- Use bullet points when appropriate.\n- Do not add explanations.\n- If text is unreadable, mark as [UNREADABLE].\n\nAdd this comment at the top:\n<!-- page: ${pageNo} -->`;
 }
@@ -133,7 +147,22 @@ async function processJob(job: Job) {
   });
 }
 
+let warnedApiUnavailable = false;
+
 async function tick() {
+  if (!(await isApiReady())) {
+    if (!warnedApiUnavailable) {
+      console.warn(`worker: API not reachable at ${apiBase}; waiting...`);
+      warnedApiUnavailable = true;
+    }
+    return;
+  }
+
+  if (warnedApiUnavailable) {
+    console.log(`worker: API reachable at ${apiBase}; resuming queue processing.`);
+    warnedApiUnavailable = false;
+  }
+
   const job = db.prepare(`SELECT id, total_pages FROM jobs WHERE status = 'QUEUED' ORDER BY created_at ASC LIMIT 1`).get() as Job | undefined;
   if (!job) return;
 
