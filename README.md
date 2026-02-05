@@ -5,7 +5,7 @@
 - フロントエンド（React）が `pdfjs-dist` + Canvas で PDF をページ画像化。
 - ページ画像を API に逐次アップロード。
 - API はジョブと進捗を SQLite で管理し、SSE を配信。
-- Worker が `codex exec --file page.png` をページ単位で実行し Markdown 化。
+- Worker が `codex exec -i page.png` をページ単位で実行し Markdown 化。
 - 最終的に `data/results/{jobId}/result.md` を統合生成。
 
 ## ディレクトリ構成
