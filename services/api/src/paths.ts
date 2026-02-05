@@ -1,7 +1,9 @@
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(process.cwd(), "../..");
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(currentDir, "../../..");
 export const dataDir = path.join(repoRoot, "data");
 export const uploadsDir = path.join(dataDir, "uploads");
 export const pagesDir = path.join(dataDir, "pages");

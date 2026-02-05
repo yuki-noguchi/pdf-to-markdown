@@ -2,8 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import Database from "better-sqlite3";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(process.cwd(), "../..");
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(currentDir, "../../..");
 const dataDir = path.join(repoRoot, "data");
 const dbPath = path.join(dataDir, "db.sqlite");
 const pagesRoot = path.join(dataDir, "pages");
