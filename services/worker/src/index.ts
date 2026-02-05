@@ -14,6 +14,21 @@ for (const dir of [resultsRoot]) fs.mkdirSync(dir, { recursive: true });
 
 const db = new Database(dbPath);
 
+db.exec(`
+CREATE TABLE IF NOT EXISTS jobs (
+  id TEXT PRIMARY KEY,
+  status TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  original_file_name TEXT NOT NULL,
+  total_pages INTEGER,
+  current_page INTEGER NOT NULL DEFAULT 0,
+  progress REAL NOT NULL DEFAULT 0,
+  result_path TEXT,
+  error_message TEXT
+);
+`);
+
 type Job = { id: string; total_pages: number };
 
 function sleep(ms: number) {
