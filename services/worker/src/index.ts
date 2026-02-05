@@ -57,7 +57,7 @@ function codexPrompt(pageNo: number) {
 
 function runCodexForPage(workDir: string, pageNo: number) {
   return new Promise<string>((resolve, reject) => {
-    const child = spawn("codex", ["exec", "--prompt", codexPrompt(pageNo), "--file", "page.png"], {
+    const child = spawn("codex", ["exec", "--file", "page.png", codexPrompt(pageNo)], {
       cwd: workDir,
       shell: false
     });
